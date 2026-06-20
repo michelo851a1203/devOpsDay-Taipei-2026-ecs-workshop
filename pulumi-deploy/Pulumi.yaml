@@ -1,0 +1,7 @@
+name: testa
+description: test dmeo
+runtime: go
+config:
+  pulumi:tags:
+    value:
+      pulumi:template: aws-go
