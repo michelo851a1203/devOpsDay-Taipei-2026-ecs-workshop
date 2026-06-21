@@ -1,6 +1,6 @@
 # AWS Console 操作流程
 
-## Step 1: 先設定 Security Group
+## 先設定 Security Group
 
 1. 左上角 **Search** -> 尋找 **EC2**
 
@@ -35,7 +35,9 @@ Source: 點選 input 找到剛才創建的 **demo-sg**
 
 - Outbound rules 不用動
 
-## Step 2: 設定 TargetGroup
+## 設定 TargetGroup
+
+### Step 1 of 3:
 
 1. 在左側 SideBar(Load Balancing) 點選 **Target Groups**
 
@@ -55,13 +57,17 @@ Health checks : (原則上不用設定)
 
 點選右下角的橘色按鈕**Next**
 
+### Step 2 of 3 :
+
 (Register targets)確認畫面資訊 okay
 再點選右下角的橘色按鈕**Next**
+
+### Step 3 of 3 :
 
 Review and create
 點選右下角的橘色按鈕**Create target group**
 
-## Step3 : 設定 Load Balancers (ALB)
+## 設定 Load Balancers (ALB)
 
 1. 在左側 SideBar(Load Balancing) 點選 **Load Balancers**
 
@@ -97,7 +103,7 @@ Review and create
 
 點選右下角橘色按鈕 **Create namespace**
 
-## step5 : 設定 ECS - Cluster
+## 設定 ECS - Cluster
 
 1. 左上角 **Search** -> 尋找 **ECS**
 
@@ -151,7 +157,7 @@ Fargate only
 **awslogs-region** -> value : <你所在的區域>
 **awslogs-stream-prefix** -> value : api-blue
 
-## step6 : 設定 Task definition (api-green)
+## 設定 Task definition (api-green)
 
 1. 在左側 SideBar 點選 **Task deinfitions**
 
@@ -187,7 +193,7 @@ Fargate only
 **awslogs-region** -> value : <你所在的區域>
 **awslogs-stream-prefix** -> value : api-green
 
-## step7: 調整 剛才創建的 Task execution role 權限 (通常是 ecsTaskExecutionRole)
+## 調整 剛才創建的 Task execution role 權限 (通常是 ecsTaskExecutionRole)
 
 1. 左上角 **Search** -> 尋找 **iam**
 
@@ -253,7 +259,7 @@ HTTP:80
 **Target group** : Use an existing target group
 demo-tg
 
-## step 9 : 創建服務(api-green)
+## 創建服務(api-green)
 
 1. 回到 **ECS**
 
@@ -303,7 +309,7 @@ HTTP:80
 **Target group** : Use an existing target group
 demo-tg
 
-## step 10 : 檢查
+## 檢查
 
 1. 回到 **EC2**
 
