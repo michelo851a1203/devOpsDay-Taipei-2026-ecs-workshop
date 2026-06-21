@@ -12,9 +12,13 @@
 **Security group name** : demo-sg
 **Description** : demo-sg
 
+**VPC** 帶入預設
+
 - Inbound rules
 Type: HTTP (80)
 Source: Anywhere Ipv4
+
+- Outbound rules 不用動
 
 4. 再創建一個 Security group
 
@@ -22,10 +26,14 @@ Source: Anywhere Ipv4
 **Security group name** : demo-ecs-sg
 **Description** : demo-ecs-sg
 
+**VPC** 帶入預設
+
 - Inbound rules
 Type: Custom TCP
 Port range: 8080
 Source: 點選 input 找到剛才創建的 **demo-sg**
+
+- Outbound rules 不用動
 
 ## Step 2: 設定 TargetGroup
 
