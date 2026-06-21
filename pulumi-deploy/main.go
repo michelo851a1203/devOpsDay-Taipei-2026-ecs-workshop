@@ -268,7 +268,7 @@ func main() {
 				LogConfiguration: &LogConfiguration{
 					LogDriver: "awslogs",
 					Options: map[string]string{
-						"awslogs-group":         "/ecs/sample-logs",
+						"awslogs-group":         "/ecs/sample-log",
 						"awslogs-region":        regionName,
 						"awslogs-stream-prefix": "green",
 						"awslogs-create-group":  "true",

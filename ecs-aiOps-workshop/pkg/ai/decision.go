@@ -11,6 +11,7 @@ import (
 
 	"github.com/aws/aws-sdk-go-v2/aws"
 	"github.com/aws/aws-sdk-go-v2/service/bedrockruntime"
+	"github.com/aws/aws-sdk-go-v2/service/bedrockruntime/types"
 )
 
 type Decision struct {
@@ -91,50 +92,45 @@ func stripMarkdownFence(s string) string {
 	return s
 }
 
-func ParseResponse(output []byte) (*Decision, error) {
-	var res NovaResponse
-	err := json.Unmarshal(output, &res)
-	if err != nil {
-		return nil, fmt.Errorf("[parseResponse] failed to unmarshal response: %w", err)
-	}
-	contents := res.Output.Message.Content
-	if len(contents) == 0 {
-		return nil, fmt.Errorf("no content in response")
-	}
-	resultContent := stripMarkdownFence(contents[0].Text)
-
-	var result Decision
-	err = json.Unmarshal([]byte(resultContent), &result)
-	if err != nil {
-		return nil, fmt.Errorf("[parseResponse] failed to unmarshal response: %w", err)
-	}
-
-	return &result, nil
-}
-
 func (e *Engine) Evaluate(ctx context.Context, prompt string) (*Decision, error) {
-	request := NovaRequest{
-		Messages: []NovaRequestMessage{
-			{Role: "user", Content: []NovaRequestMessageContent{{Text: prompt}}},
+	output, err := e.bedrock.Converse(ctx, &bedrockruntime.ConverseInput{
+		ModelId: aws.String(e.modelID),
+		Messages: []types.Message{
+			{
+				Role: types.ConversationRoleUser,
+				Content: []types.ContentBlock{
+					&types.ContentBlockMemberText{
+						Value: prompt,
+					},
+				},
+			},
 		},
-		InferenceConfig: NovaRequestInferenceConfig{
-			MaxNewTokens: 1024,
+		InferenceConfig: &types.InferenceConfiguration{
+			MaxTokens: aws.Int32(1024),
 		},
-	}
-
-	body, err := json.Marshal(request)
-	if err != nil {
-		return nil, fmt.Errorf("json marshal error : %w", err)
-	}
-
-	res, err := e.bedrock.InvokeModel(ctx, &bedrockruntime.InvokeModelInput{
-		ModelId:     aws.String(e.modelID),
-		ContentType: aws.String("application/json"),
-		Body:        body,
 	})
 	if err != nil {
-		return nil, fmt.Errorf("failed to invoke model : %w", err)
+		return nil, err
+	}
+	outputMemberMessage, ok := output.Output.(*types.ConverseOutputMemberMessage)
+	if !ok {
+		return nil, fmt.Errorf("unexpected output type of converse api")
 	}
 
-	return ParseResponse(res.Body)
+	var resultString strings.Builder
+	for _, block := range outputMemberMessage.Value.Content {
+		textBlock, ok := block.(*types.ContentBlockMemberText)
+		if !ok {
+			continue
+		}
+		resultString.WriteString(textBlock.Value)
+	}
+	// 這裡轉換一下 json 結果
+	var result Decision
+	jsonString := stripMarkdownFence(resultString.String())
+	err = json.Unmarshal([]byte(jsonString), &result)
+	if err != nil {
+		return nil, fmt.Errorf("json unmarshal error : %v", err)
+	}
+	return &result, nil
 }

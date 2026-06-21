@@ -16,7 +16,7 @@ func main() {
 	ctx := context.Background()
 	cfg, err := config.LoadDefaultConfig(ctx,
 		config.WithRegion("ap-east-2"),
-		config.WithSharedConfigProfile("AdministratorAccess-687126124212"),
+		config.WithSharedConfigProfile("<你的 profile name>"),
 	)
 
 	if err != nil {

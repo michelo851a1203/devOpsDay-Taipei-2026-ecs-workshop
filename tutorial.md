@@ -126,6 +126,8 @@ Fargate only
 
 1. 在左側 SideBar 點選 **Task deinfitions**
 
+Create new task definition
+
 **Task definition family** : api-blue
 
 - Infrastructure requirements:
