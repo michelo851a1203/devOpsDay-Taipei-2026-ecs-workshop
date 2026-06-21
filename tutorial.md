@@ -105,7 +105,7 @@ Review and create
 
 ## 設定 ECS - Cluster
 
-1. 左上角 **Search** -> 尋找 **ECS**
+1. 左上角 **Search** -> 尋找 **Elastic Container Servic**
 
 2. 在左側 SideBar 點選 **Cluster**
 
