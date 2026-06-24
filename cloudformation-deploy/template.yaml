@@ -1,0 +1,358 @@
+AWSTemplateFormatVersion: "2010-09-09"
+Description: >
+  ECS Fargate blue/green demo stack — CloudFormation equivalent of the
+  pulumi-deploy (aws-go) project. Creates a Security Group, ALB + Listener +
+  Target Group, an ECS Cluster (Container Insights), a Cloud Map HTTP namespace,
+  two Fargate task definitions (api-blue / api-green) and two ECS services with
+  Service Connect enabled.
+
+# ---------------------------------------------------------------------------
+# Parameters — 教學版：所有值都寫死在這裡的 Default，部署時不必再帶
+# --parameter-overrides。要換成你自己的環境，直接改下面每個 Default 即可。
+# (這些對應 main.go 最上方那段被框起來的變數。)
+# ---------------------------------------------------------------------------
+Parameters:
+  VpcId:
+    Type: String
+    Default: vpc-xxxxxxxxxxxxxxxxx          # ← 改成你的 VPC ID
+    Description: VPC where the ALB / target group / services live (Pulumi vpcID).
+
+  SubnetA:
+    Type: String
+    Default: subnet-aaaaaaaaaaaaaaaaa       # ← 改成你的 Subnet A
+    Description: Subnet A (Pulumi subnetA).
+
+  SubnetB:
+    Type: String
+    Default: subnet-bbbbbbbbbbbbbbbbb       # ← 改成你的 Subnet B
+    Description: Subnet B (Pulumi subnetB).
+
+  SubnetC:
+    Type: String
+    Default: subnet-ccccccccccccccccc       # ← 改成你的 Subnet C
+    Description: Subnet C (Pulumi subnetC).
+
+  EcrImageUri:
+    Type: String
+    Default: <account_id>.dkr.ecr.ap-east-2.amazonaws.com/<repo>:latest   # ← 改成你的映像 URI
+    Description: >
+      Container image URI (Pulumi ecrURI), e.g.
+      <account_id>.dkr.ecr.ap-east-2.amazonaws.com/<repo>:latest
+
+  CpuArchitecture:
+    Type: String
+    Default: ARM64
+    AllowedValues:
+      - ARM64
+      - X86_64
+    Description: Fargate CPU architecture (Pulumi cpuArchitecture).
+
+  BlueServiceName:
+    Type: String
+    Default: api-blue-service-9ea7cd8ca8e752b2
+    Description: Name of the blue ECS service (Pulumi blueServiceName).
+
+  GreenServiceName:
+    Type: String
+    Default: api-green-service-2f43e8d51a80e99b
+    Description: Name of the green ECS service (Pulumi greenServiceName).
+
+  ExistingExecutionRoleArn:
+    Type: String
+    Default: ""
+    Description: >
+      Optional. ARN of an existing ecsTaskExecutionRole. Leave EMPTY to let this
+      stack create the role (mirrors the Pulumi LookupRole-or-create logic).
+      If your account already has 'ecsTaskExecutionRole', set this so the stack
+      reuses it instead of failing on a name conflict.
+
+# ---------------------------------------------------------------------------
+Conditions:
+  # When no existing role ARN is supplied, create the execution role here.
+  CreateExecutionRole: !Equals [!Ref ExistingExecutionRoleArn, ""]
+
+# ---------------------------------------------------------------------------
+Resources:
+
+  # ---- Security Group (Pulumi demo-sg) ----
+  SecurityGroup:
+    Type: AWS::EC2::SecurityGroup
+    Properties:
+      GroupName: demo-sg
+      GroupDescription: demo-sg description
+      VpcId: !Ref VpcId
+      SecurityGroupIngress:
+        - IpProtocol: tcp
+          FromPort: 80
+          ToPort: 80
+          CidrIp: 0.0.0.0/0
+      SecurityGroupEgress:
+        - IpProtocol: "-1"   # 所有協定/連接埠 (等同 Pulumi protocol "-1")
+          CidrIp: 0.0.0.0/0
+
+  # Self-referencing 8080 ingress must be a separate resource in CloudFormation
+  # (an inline rule cannot reference the SG's own id).
+  SelfIngress8080:
+    Type: AWS::EC2::SecurityGroupIngress
+    Properties:
+      GroupId: !GetAtt SecurityGroup.GroupId
+      IpProtocol: tcp
+      FromPort: 8080
+      ToPort: 8080
+      SourceSecurityGroupId: !GetAtt SecurityGroup.GroupId
+
+  # ---- Target Group (Pulumi demo-tg) ----
+  TargetGroup:
+    Type: AWS::ElasticLoadBalancingV2::TargetGroup
+    Properties:
+      Name: demo-tg
+      TargetType: ip
+      Protocol: HTTP
+      Port: 8080
+      VpcId: !Ref VpcId
+      HealthCheckPath: /health
+      HealthCheckPort: "8080"
+      HealthCheckProtocol: HTTP
+      HealthyThresholdCount: 2
+      UnhealthyThresholdCount: 3
+      HealthCheckIntervalSeconds: 10
+
+  # ---- Application Load Balancer (Pulumi demo-alb) ----
+  LoadBalancer:
+    Type: AWS::ElasticLoadBalancingV2::LoadBalancer
+    Properties:
+      Name: demo-alb
+      Type: application
+      Scheme: internet-facing
+      SecurityGroups:
+        - !GetAtt SecurityGroup.GroupId
+      Subnets:
+        - !Ref SubnetA
+        - !Ref SubnetB
+        - !Ref SubnetC
+
+  # ---- ALB Listener (Pulumi alb-listener) ----
+  Listener:
+    Type: AWS::ElasticLoadBalancingV2::Listener
+    Properties:
+      LoadBalancerArn: !Ref LoadBalancer
+      Port: 80
+      Protocol: HTTP
+      DefaultActions:
+        - Type: forward
+          TargetGroupArn: !Ref TargetGroup
+
+  # ---- Cloud Map HTTP namespace (Pulumi workshop.local) ----
+  Namespace:
+    Type: AWS::ServiceDiscovery::HttpNamespace
+    Properties:
+      Name: workshop.local
+
+  # ---- ECS Cluster (Pulumi demo-cluster) ----
+  Cluster:
+    Type: AWS::ECS::Cluster
+    Properties:
+      # ClusterName intentionally omitted -> CloudFormation generates a unique
+      # name, matching the Pulumi default (random name).
+      ClusterSettings:
+        - Name: containerInsights
+          Value: enabled
+
+  # ---- IAM execution role (Pulumi LookupRole-or-create) ----
+  ExecutionRole:
+    Type: AWS::IAM::Role
+    Condition: CreateExecutionRole
+    Properties:
+      RoleName: ecsTaskExecutionRole
+      AssumeRolePolicyDocument:
+        Version: "2012-10-17"
+        Statement:
+          - Effect: Allow
+            Principal:
+              Service: ecs-tasks.amazonaws.com
+            Action: sts:AssumeRole
+      ManagedPolicyArns:
+        - arn:aws:iam::aws:policy/service-role/AmazonECSTaskExecutionRolePolicy
+        - arn:aws:iam::aws:policy/CloudWatchFullAccess
+
+  # ---- Blue task definition (Pulumi api-blue) ----
+  BlueTaskDefinition:
+    Type: AWS::ECS::TaskDefinition
+    Properties:
+      Family: api-blue
+      Cpu: "512"
+      Memory: "1024"
+      NetworkMode: awsvpc
+      RequiresCompatibilities:
+        - FARGATE
+      ExecutionRoleArn: !If
+        - CreateExecutionRole
+        - !GetAtt ExecutionRole.Arn
+        - !Ref ExistingExecutionRoleArn
+      RuntimePlatform:
+        OperatingSystemFamily: LINUX
+        CpuArchitecture: !Ref CpuArchitecture
+      ContainerDefinitions:
+        - Name: api
+          Image: !Ref EcrImageUri
+          Essential: true
+          PortMappings:
+            - Name: api-port
+              ContainerPort: 8080
+              Protocol: tcp
+              AppProtocol: http
+          Environment:
+            - Name: APP_VERSION
+              Value: blue
+            - Name: FAIL_RATE
+              Value: "0"
+          LogConfiguration:
+            LogDriver: awslogs
+            Options:
+              awslogs-group: /ecs/sample-log
+              awslogs-region: !Ref AWS::Region
+              awslogs-stream-prefix: blue
+              awslogs-create-group: "true"
+
+  # ---- Green task definition (Pulumi api-green) ----
+  GreenTaskDefinition:
+    Type: AWS::ECS::TaskDefinition
+    Properties:
+      Family: api-green
+      Cpu: "512"
+      Memory: "1024"
+      NetworkMode: awsvpc
+      RequiresCompatibilities:
+        - FARGATE
+      ExecutionRoleArn: !If
+        - CreateExecutionRole
+        - !GetAtt ExecutionRole.Arn
+        - !Ref ExistingExecutionRoleArn
+      RuntimePlatform:
+        OperatingSystemFamily: LINUX
+        CpuArchitecture: !Ref CpuArchitecture
+      ContainerDefinitions:
+        - Name: api
+          Image: !Ref EcrImageUri
+          Essential: true
+          PortMappings:
+            - Name: api-port
+              ContainerPort: 8080
+              Protocol: tcp
+              AppProtocol: http
+          Environment:
+            - Name: APP_VERSION
+              Value: green
+            - Name: FAIL_RATE
+              Value: "0"
+          LogConfiguration:
+            LogDriver: awslogs
+            Options:
+              awslogs-group: /ecs/sample-log
+              awslogs-region: !Ref AWS::Region
+              awslogs-stream-prefix: green
+              awslogs-create-group: "true"
+
+  # ---- Blue service (Pulumi api-blue-service, desiredCount 2) ----
+  BlueService:
+    Type: AWS::ECS::Service
+    # Service creation that references a target group requires the listener to
+    # exist first (the Pulumi runtime infers this dependency automatically).
+    DependsOn: Listener
+    Properties:
+      ServiceName: !Ref BlueServiceName
+      Cluster: !GetAtt Cluster.Arn
+      TaskDefinition: !Ref BlueTaskDefinition
+      DesiredCount: 2
+      LaunchType: FARGATE
+      NetworkConfiguration:
+        AwsvpcConfiguration:
+          AssignPublicIp: ENABLED
+          SecurityGroups:
+            - !GetAtt SecurityGroup.GroupId
+          Subnets:
+            - !Ref SubnetA
+            - !Ref SubnetB
+            - !Ref SubnetC
+      LoadBalancers:
+        - TargetGroupArn: !Ref TargetGroup
+          ContainerName: api
+          ContainerPort: 8080
+      ServiceConnectConfiguration:
+        Enabled: true
+        Namespace: !GetAtt Namespace.Arn
+        Services:
+          - PortName: api-port
+            DiscoveryName: api-blue
+            ClientAliases:
+              - Port: 8080
+                DnsName: api-blue
+
+  # ---- Green service (Pulumi api-green-service, desiredCount 1) ----
+  GreenService:
+    Type: AWS::ECS::Service
+    DependsOn: Listener
+    Properties:
+      ServiceName: !Ref GreenServiceName
+      Cluster: !GetAtt Cluster.Arn
+      TaskDefinition: !Ref GreenTaskDefinition
+      DesiredCount: 1
+      LaunchType: FARGATE
+      NetworkConfiguration:
+        AwsvpcConfiguration:
+          AssignPublicIp: ENABLED
+          SecurityGroups:
+            - !GetAtt SecurityGroup.GroupId
+          Subnets:
+            - !Ref SubnetA
+            - !Ref SubnetB
+            - !Ref SubnetC
+      LoadBalancers:
+        - TargetGroupArn: !Ref TargetGroup
+          ContainerName: api
+          ContainerPort: 8080
+      ServiceConnectConfiguration:
+        Enabled: true
+        Namespace: !GetAtt Namespace.Arn
+        Services:
+          - PortName: api-port
+            DiscoveryName: api-green
+            ClientAliases:
+              - Port: 8080
+                DnsName: api-green
+
+# ---------------------------------------------------------------------------
+# Outputs — mirror the ctx.Export(...) calls at the end of main.go
+# ---------------------------------------------------------------------------
+Outputs:
+  albDnsName:
+    Description: Public DNS name of the ALB.
+    Value: !GetAtt LoadBalancer.DNSName
+
+  clusterArn:
+    Description: ECS cluster ARN.
+    Value: !GetAtt Cluster.Arn
+
+  clusterName:
+    Description: ECS cluster name.
+    Value: !Ref Cluster
+
+  blueServiceName:
+    Description: Blue ECS service name.
+    Value: !Ref BlueServiceName
+
+  greenServiceName:
+    Description: Green ECS service name.
+    Value: !Ref GreenServiceName
+
+  targetGroupArn:
+    Description: Target group ARN.
+    Value: !Ref TargetGroup
+
+  namespaceId:
+    Description: Cloud Map HTTP namespace id.
+    Value: !GetAtt Namespace.Id
+
+  securityGroupId:
+    Description: Security group id.
+    Value: !GetAtt SecurityGroup.GroupId
