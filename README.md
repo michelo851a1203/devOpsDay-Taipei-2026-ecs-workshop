@@ -30,10 +30,14 @@ AI 決策大腦 ： 實作 Golang 與 AWS Bedrock (LLM) 的介接，
 
 可以參考 `tutorial.md` 檔案  
 
+完整教學圖文並茂可以參考 `tutorial-full.md`
+
 ## 如果想用 iac (Infrastructure as code) 把服務起起來的話可以參考  
 
 記得先把 `workshop-sample` 上到 ECR(Elastic Container Registry) -> 可以先參考 `ecr_push_tutorial.md`
 
 1. pulumi  (可以參考`pulumi_tutorial.md`)
 
+2. terraform (可以參考 `terraform-deploy`)
 
+3. cloudformation (可以參考 `cloudformation-deploy`)
