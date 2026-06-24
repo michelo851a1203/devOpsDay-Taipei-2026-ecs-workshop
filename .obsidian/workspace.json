@@ -1,0 +1,185 @@
+{
+  "main": {
+    "id": "2d8a553b33ac8ed3",
+    "type": "split",
+    "children": [
+      {
+        "id": "c105ce18803f5681",
+        "type": "tabs",
+        "children": [
+          {
+            "id": "82273e23ca92f25c",
+            "type": "leaf",
+            "state": {
+              "type": "image",
+              "state": {
+                "file": "Pasted image 20260624215405.png"
+              },
+              "icon": "lucide-image",
+              "title": "Pasted image 20260624215405"
+            }
+          }
+        ]
+      }
+    ],
+    "direction": "vertical"
+  },
+  "left": {
+    "id": "ce89d3ab50c73e46",
+    "type": "split",
+    "children": [
+      {
+        "id": "390c50fe570cf2cf",
+        "type": "tabs",
+        "children": [
+          {
+            "id": "ed41e7e361de35e2",
+            "type": "leaf",
+            "state": {
+              "type": "file-explorer",
+              "state": {
+                "sortOrder": "alphabetical",
+                "autoReveal": false
+              },
+              "icon": "lucide-folder-closed",
+              "title": "檔案瀏覽器"
+            }
+          },
+          {
+            "id": "92659b6dc79100cf",
+            "type": "leaf",
+            "state": {
+              "type": "search",
+              "state": {
+                "query": "",
+                "matchingCase": false,
+                "explainSearch": false,
+                "collapseAll": false,
+                "extraContext": false,
+                "sortOrder": "alphabetical"
+              },
+              "icon": "lucide-search",
+              "title": "搜尋"
+            }
+          },
+          {
+            "id": "4a21a8d0251ac3e5",
+            "type": "leaf",
+            "state": {
+              "type": "bookmarks",
+              "state": {},
+              "icon": "lucide-bookmark",
+              "title": "書籤"
+            }
+          }
+        ]
+      }
+    ],
+    "direction": "horizontal",
+    "width": 200
+  },
+  "right": {
+    "id": "175fe208bc92ead9",
+    "type": "split",
+    "children": [
+      {
+        "id": "6d46156aac8282a2",
+        "type": "tabs",
+        "children": [
+          {
+            "id": "cd28a65a58ccce7a",
+            "type": "leaf",
+            "state": {
+              "type": "backlink",
+              "state": {
+                "file": "tutorial-full.md",
+                "collapseAll": false,
+                "extraContext": false,
+                "sortOrder": "alphabetical",
+                "showSearch": false,
+                "searchQuery": "",
+                "backlinkCollapsed": false,
+                "unlinkedCollapsed": true
+              },
+              "icon": "links-coming-in",
+              "title": "tutorial-full 的反向連結"
+            }
+          },
+          {
+            "id": "71df7eb9553b2c47",
+            "type": "leaf",
+            "state": {
+              "type": "outgoing-link",
+              "state": {
+                "file": "tutorial-full.md",
+                "linksCollapsed": false,
+                "unlinkedCollapsed": true
+              },
+              "icon": "links-going-out",
+              "title": "tutorial-full 的對外連結"
+            }
+          },
+          {
+            "id": "eb503b2baa3e81c8",
+            "type": "leaf",
+            "state": {
+              "type": "tag",
+              "state": {
+                "sortOrder": "frequency",
+                "useHierarchy": true,
+                "showSearch": false,
+                "searchQuery": ""
+              },
+              "icon": "lucide-tags",
+              "title": "標籤"
+            }
+          },
+          {
+            "id": "2fa891ea8fe7e538",
+            "type": "leaf",
+            "state": {
+              "type": "outline",
+              "state": {
+                "file": "tutorial-full.md",
+                "followCursor": false,
+                "showSearch": false,
+                "searchQuery": ""
+              },
+              "icon": "lucide-list",
+              "title": "tutorial-full 的大綱"
+            }
+          }
+        ]
+      }
+    ],
+    "direction": "horizontal",
+    "width": 300,
+    "collapsed": true
+  },
+  "left-ribbon": {
+    "hiddenItems": {
+      "switcher:開啟快速切換": false,
+      "graph:查看關聯圖": false,
+      "canvas:建立新畫布": false,
+      "daily-notes:開啟今天的每日筆記": false,
+      "templates:插入模板": false,
+      "command-palette:開啟命令面板": false,
+      "bases:建立新的 base": false
+    }
+  },
+  "active": "82273e23ca92f25c",
+  "lastOpenFiles": [
+    "tutorial-full.md",
+    "Pasted image 20260624225117.png",
+    "Pasted image 20260624224612.png",
+    "Pasted image 20260624224318.png",
+    "Pasted image 20260624223235.png",
+    "Pasted image 20260624223004.png",
+    "Pasted image 20260624222749.png",
+    "Pasted image 20260624221859.png",
+    "Pasted image 20260624221718.png",
+    "Pasted image 20260624220539.png",
+    "Pasted image 20260624215637.png",
+    "tutorial.md"
+  ]
+}
