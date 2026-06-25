@@ -159,6 +159,10 @@ func main() {
 			float64(minSampleSize),
 		)
 		decision, err := engine.Evaluate(ctx, prompt)
+		// 如果是新手帳號，AWS 官方會有 token 限額問題，如果短時間申請沒有下文
+		// 可以先用 genkit 去頂一下 -> 那就把底下的註解打開上面的 Evaluate 給註解起來
+		// decision, err := engine.EvaluateViaGenkit(ctx, prompt)
+
 		if err != nil {
 			log.Printf("[Error] AI evaluation failed : %v\n", err)
 			continue
