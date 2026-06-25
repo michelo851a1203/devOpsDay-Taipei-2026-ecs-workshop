@@ -4,19 +4,25 @@ import (
 	"context"
 	"fmt"
 	"log"
-	"michleo851a1203/ecs-aiopsworkshop/pkg/actuator"
 	"michleo851a1203/ecs-aiopsworkshop/pkg/ai"
 	"michleo851a1203/ecs-aiopsworkshop/pkg/metric"
+	"os"
+	"os/signal"
+	"syscall"
 	"time"
 
 	"github.com/aws/aws-sdk-go-v2/config"
 )
 
 func main() {
-	ctx := context.Background()
+	// 用 signal.NotifyContext 讓 ctx 在 Ctrl+C (SIGINT) / SIGTERM 時被取消。
+	// 注意:genkit.Init 內部也會註冊 SIGINT handler,但它把 cancel 丟掉、只給內部用,
+	// 不會取消我們這個 ctx。所以一定要自己在 main 接 signal,否則 Ctrl+C 會沒反應。
+	ctx, stop := signal.NotifyContext(context.Background(), os.Interrupt, syscall.SIGTERM)
+	defer stop()
 	cfg, err := config.LoadDefaultConfig(ctx,
 		config.WithRegion("ap-east-2"),
-		config.WithSharedConfigProfile("<你的 profile name>"),
+		config.WithSharedConfigProfile("<你的 profile>"),
 	)
 
 	if err != nil {
@@ -43,7 +49,7 @@ func main() {
 	// 取後面的 : targetgroup/dmeo-tg/b1b55f2d05892872
 	albTargetGroup := "<target group維度值>" // targetgroup/dmeo-tg/b1b55f2d05892872
 
-	errorRateThreshold := 80.0
+	errorRateThreshold := 20.0
 	minSampleSize := 5
 	p99LatencyThreshold := 1.0 // 秒,ALB P99 超過此值視為延遲異常
 	// ==============================
@@ -97,13 +103,29 @@ func main() {
 
 	collector := metric.NewCollector(cfg, cluster, namespace, serviceNames, albLoadBalancer, albTargetGroup)
 	engine := ai.NewEngine(cfg)
-	act := actuator.NewActuator(cfg, cluster, serviceNames[blueService], serviceNames[greenService])
+	// act := actuator.NewActuator(cfg, cluster, serviceNames[blueService], serviceNames[greenService])
+
+	// 如果是新手帳號，AWS 官方會有 token 限額問題，如果短時間申請沒有下文
+	// 可以先用 genkit 去頂一下 -> 那就把底下的註解打開上面的 Evaluate 給註解起來
+	// genkitClient := genkit.Init(ctx, genkit.WithPlugins(
+	// 	&ollama.Ollama{
+	// 		ServerAddress: "http://localhost:11434",
+	// 		Timeout:       600, // 10 mins 如果是跑本地的模型會比較久，可以考慮設 timoue 時間比較久，像是我這跑 10 分鐘(gemma4:31b-mlx)
+	// 	},
+	// ))
 
 	windowMin := 5
 	ticker := time.NewTicker(15 * time.Second) // 因為這裡為了 workshop 所以設 15 秒，正常可能用個 1-3 分鐘數值會比較準確
 	defer ticker.Stop()
 
-	for range ticker.C {
+	for {
+		select {
+		case <-ctx.Done():
+			log.Println("收到中斷訊號,正在結束... 👋")
+			return
+		case <-ticker.C:
+		}
+
 		blueServiceMetric, err := collector.Collect(ctx, blueService, windowMin)
 		if err != nil {
 			log.Printf("blue-service metric error : %v\n", err)
@@ -159,6 +181,10 @@ func main() {
 			float64(minSampleSize),
 		)
 		decision, err := engine.Evaluate(ctx, prompt)
+		// 如果是新手帳號，AWS 官方會有 token 限額問題，如果短時間申請沒有下文
+		// 可以先用 genkit 去頂一下 -> 那就把底下的註解打開上面的 Evaluate 給註解起來
+		// decision, err := engine.EvaluateViaGenkit(ctx, genkitClient, prompt)
+
 		if err != nil {
 			log.Printf("[Error] AI evaluation failed : %v\n", err)
 			continue
@@ -167,10 +193,11 @@ func main() {
 		log.Printf("[AI推理過程]: %s\n", decision.Reasoning)
 
 		if decision.Confidence > 80 {
-			// fmt.Printf("\033[032m假裝執行為了測試 %s\033[0m\n", decision.Action)
-			if err = act.Execute(ctx, decision.Action); err != nil {
-				log.Printf("[Error]Execute failed : %v\n", err)
-			}
+			fmt.Printf("\033[032m假裝執行為了測試 %s\033[0m\n", decision.Action)
+			// if err = act.Execute(ctx, decision.Action); err != nil {
+			// 	log.Printf("[Error]Execute failed : %v\n", err)
+			// }
+			// return
 		} else {
 			log.Println("[AI表示]沒把握，等下一個週期在決策!!😅")
 		}

@@ -1,0 +1,15 @@
+# 複製成 terraform.tfvars 後填入自己的值
+# cp terraform.tfvars.example terraform.tfvars
+
+region      = "ap-east-2"
+aws_profile = "AdministratorAccess-xxxxxx"
+
+vpc_id     = "vpc-034121b108f7b40f5"
+subnet_ids = ["subnet-aaaaaaaaa", "subnet-bbbbbbbbb", "subnet-cccccccc"]
+
+ecr_uri = "<account_id>.dkr.ecr.ap-east-2.amazonaws.com/<repo_namespace>:latest"
+
+cpu_architecture = "ARM64"
+
+# 帳號內已經有 ecsTaskExecutionRole 時，改成 false 沿用既有 role
+create_ecs_task_execution_role = true
