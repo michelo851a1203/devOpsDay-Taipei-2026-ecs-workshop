@@ -38,18 +38,18 @@ AI 決策大腦 ： 實作 Golang 與 AWS Bedrock (LLM) 的介接，
 
 選擇自己喜歡的方式把服務起起來  
 
-## 如何在 AWS console 部署 ECS 的部分
 
-可以參考 `tutorial.md` 檔案  
+## 🛠 部署方式
 
-完整教學圖文並茂可以參考 `tutorial-full.md`
+> 💡 記得先把 `workshop-sample` 推上 ECR，可參考 [ecr_push_tutorial.md](./ecr_push_tutorial.md)
 
-## 如果想用 iac (Infrastructure as code) 把服務起起來的話可以參考  
+| 方式 | 適用情境 | 教學文件 |
+|------|----------|----------|
+| AWS Console | 手動部署、初學者 | [tutorial.md](./tutorial.md) / [tutorial-full.md](./tutorial-full.md) |
+| Pulumi | 偏好程式語言寫 IaC | [pulumi_tutorial.md](./pulumi_tutorial.md) |
+| Terraform | 業界主流 IaC | [terraform-deploy/](./terraform-deploy) |
+| CloudFormation | AWS 原生 IaC | [cloudformation-deploy/](./cloudformation-deploy) |
 
-記得先把 `workshop-sample` 上到 ECR(Elastic Container Registry) -> 可以先參考 `ecr_push_tutorial.md`
 
-1. pulumi  (可以參考`pulumi_tutorial.md`)
-
-2. terraform (可以參考 `terraform-deploy`)
-
-3. cloudformation (可以參考 `cloudformation-deploy`)
+## 📄 License
+本專案採用 [MIT License](./LICENSE) 授權。
