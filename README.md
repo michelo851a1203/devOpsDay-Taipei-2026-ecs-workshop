@@ -1,4 +1,16 @@
-# DevOps day Taipei 2026 : Go 整合 ECS Service Connect 與 LLM 實作 AIOps 自動化決策  
+# 🚀 DevOps Day Taipei 2026
+### Go 整合 ECS Service Connect 與 LLM 實作 AIOps 自動化決策
+
+![License](https://img.shields.io/badge/license-MIT-blue.svg)
+![Go](https://img.shields.io/badge/Go-00ADD8?logo=go&logoColor=white)
+![AWS ECS](https://img.shields.io/badge/AWS-ECS-FF9900?logo=amazonaws&logoColor=white)
+![Pulumi](https://img.shields.io/badge/IaC-Pulumi%20%7C%20Terraform%20%7C%20CloudFormation-844FBA)
+
+## 📑 目錄
+- [大綱](#大綱)
+- [快速開始](#快速開始)
+- [部署方式](#部署方式)
+- [教學文件](#教學文件)
 
 ## 大綱
 
